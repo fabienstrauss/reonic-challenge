@@ -2,6 +2,7 @@ import { Response, Request } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { z } from 'zod';
 import { Simulation } from './logic';
 import { CONSUMPTION_KWH, CHARGING_POWER_KW} from './data';
 
@@ -10,10 +11,26 @@ const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const simulationInputSchema = z.object({
+    numChargepoints: z.number().int().min(0, "Minimum 0.").max(100, "Maximum 100.").optional(),
+    arrivalMultiplier: z.number().min(0.2, "Minimum 20%.").max(2.0, "Maximum 200%.").optional(),
+    consumptionKWh: z.number().positive().optional(),
+    chargingPowerKW: z.number().positive().optional()
+});
+
 // POST /api/simulations
 export const createSimulation = async (req: Request, res: Response) => {
     try {
-        const { numChargepoints, arrivalMultiplier } = req.body;
+        const validation = simulationInputSchema.safeParse(req.body);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Invalid input',
+                details: z.treeifyError(validation.error)
+            });
+        }
+
+        const { numChargepoints, arrivalMultiplier } = validation.data;
 
         const config = {
             numChargepoints: numChargepoints || 20,
@@ -35,7 +52,6 @@ export const createSimulation = async (req: Request, res: Response) => {
                 theoreticalMaxPowerKW: result.theoreticalMaxPowerKW,
                 actualMaxPowerKW: result.actualMaxPowerKW,
                 concurrencyFactor: result.concurrencyFactor,
-                numChargingEvents: 0,
                 chargepointTicks: result.chargepointTicks as any
             }
         });
