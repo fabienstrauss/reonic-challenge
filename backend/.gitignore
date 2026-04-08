@@ -1,5 +1,17 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# Node.js and dependencies
+node_modules/
+npm-debug.log
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build outputs and generated code
+dist/
 /generated/prisma
+
+# OS and IDE
+.DS_Store
+.idea/
+.vscode/

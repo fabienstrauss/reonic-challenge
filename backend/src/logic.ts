@@ -1,5 +1,5 @@
 import { ARRIVAL_PROBS, CHARGING_PROBS} from "./data";
-import { SimulationConfig, SimulationResult } from "./types";
+import { SimulationResult, SimulationConfig, TickData } from "./types";
 
 export class Simulation {
 
@@ -45,15 +45,17 @@ export class Simulation {
     }
 
     /*
-    Runs full year simulation and returns aggregated metrics.
+    Runs full year simulation, returns aggregated metrics and saves to db.
      */
     public run(): SimulationResult {
         let totalEnergyKWh = 0;
         let actualMaxPowerKW = 0;
+        const chargepointTicks: TickData[] = [];
 
         for (let t = 0; t < this.ticks; t++) {
             let currTickPower = 0;
             let tickEnergyConsumed = 0;
+            const currTickValues: number[] = [];
 
             for (let i = 0; i < this.chargepoints.length; i++) {
 
@@ -75,11 +77,20 @@ export class Simulation {
                     // Update rest amount of energy needed
                     this.chargepoints[i] -= actualEnergy;
 
+                    // Append current kW to tick values
+                    const currKW = actualEnergy * 4;
+                    currTickValues.push(currKW);
+
                     // Accumulate metrics for this tick
                     tickEnergyConsumed += actualEnergy;
-                    currTickPower += this.config.chargingPowerKW;
+                    currTickPower += currKW;
+                } else {
+                    currTickValues.push(0);
                 }
             }
+
+            // Append all tick values of chargepoints
+            chargepointTicks.push({ t, v: currTickValues });
 
             // Add ticks energy to yearly total and update max power peak
             totalEnergyKWh += tickEnergyConsumed;
@@ -93,7 +104,8 @@ export class Simulation {
             totalEnergyKWh,
             theoreticalMaxPowerKW,
             actualMaxPowerKW,
-            concurrencyFactor: actualMaxPowerKW / (this.chargepoints.length * this.config.chargingPowerKW)
+            concurrencyFactor: actualMaxPowerKW / (this.chargepoints.length * this.config.chargingPowerKW),
+            chargepointTicks
         };
     }
 }

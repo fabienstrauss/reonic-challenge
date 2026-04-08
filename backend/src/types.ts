@@ -5,9 +5,15 @@ export interface SimulationConfig {
     consumptionKWh: number
 }
 
+export interface TickData {
+    t: number,
+    v: number[]
+}
+
 export interface SimulationResult {
-    totalEnergyKWh: number,
-    theoreticalMaxPowerKW: number,
-    actualMaxPowerKW: number,
-    concurrencyFactor: number,
+    totalEnergyKWh: number;
+    theoreticalMaxPowerKW: number;
+    actualMaxPowerKW: number;
+    concurrencyFactor: number;
+    chargepointTicks: TickData[];
 }
