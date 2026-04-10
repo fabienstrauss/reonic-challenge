@@ -26,7 +26,7 @@ export default function App() {
   console.log('App Rendering...');
 
   // Logic Hooks
-  const { simulations, deleteSimulation, addSimulation, updateSimulationInList } = useSimulations();
+  const { simulations, loading: simulationsLoading, deleteSimulation, addSimulation, updateSimulationInList } = useSimulations();
   const { isPlaying, setIsPlaying, playbackTick, setPlaybackTick, playSpeed, setPlaybackSpeed, resetPlayback } = usePlayback();
 
   // Selected Simulation State
@@ -58,10 +58,48 @@ export default function App() {
   const [multiplier, setMultiplier] = useState(1.0);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const resetModalState = () => {
+    setError(null);
+    setIsProcessing(false);
+  };
+
+  const openCreateModal = () => {
+    resetModalState();
+    setModalMode('create');
+    setNumCP(20);
+    setMultiplier(1.0);
+    setIsModalOpen(true);
+  };
+
+  const openUpdateModal = () => {
+    if (!selectedId || !details) {
+      openCreateModal();
+      return;
+    }
+
+    resetModalState();
+    setModalMode('update');
+    setNumCP(details.numChargepoints);
+    setMultiplier(details.arrivalMultiplier);
+    setIsModalOpen(true);
+  };
+
   // Persistence
   useEffect(() => { localStorage.setItem('theme', JSON.stringify(theme)); }, [theme]);
   useEffect(() => { localStorage.setItem('isSidebarOpen', JSON.stringify(isSidebarOpen)); }, [isSidebarOpen]);
   useEffect(() => { localStorage.setItem('selectedId', JSON.stringify(selectedId)); }, [selectedId]);
+
+  useEffect(() => {
+    if (simulationsLoading) return;
+    if (!selectedId) return;
+    const selectedStillExists = simulations.some((simulation) => simulation.id === selectedId);
+    if (selectedStillExists) return;
+
+    setSelectedId(null);
+    setDetails(null);
+    setComparisonId((current) => (current === selectedId ? null : current));
+    setError(null);
+  }, [selectedId, simulations, simulationsLoading]);
 
   // Data Fetching
   useEffect(() => {
@@ -74,11 +112,18 @@ export default function App() {
           setDetails(data);
           resetPlayback();
           setOffset(0);
-        } catch (err) { setError('Failed to load simulation'); } finally { setLoading(false); }
+          setError(null);
+        } catch (err) {
+          setDetails(null);
+          setSelectedId(null);
+          setError('Failed to load simulation');
+        } finally { setLoading(false); }
       };
       fetchDetails();
+    } else {
+      setDetails(null);
     }
-  }, [selectedId]);
+  }, [selectedId, resetPlayback]);
 
   useEffect(() => {
     if (comparisonId) {
@@ -107,6 +152,7 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (multiplier < 0.2 || multiplier > 2.0) return setError('Multiplier 0.2-2.0');
+    setError(null);
     setIsProcessing(true);
     try {
       if (modalMode === 'create') {
@@ -118,9 +164,32 @@ export default function App() {
         updateSimulationInList(result);
         const freshDetails = await api.getSimulationDetails(result.id);
         setDetails(freshDetails);
+      } else {
+        setError('Select a simulation before updating');
+        return;
       }
       setIsModalOpen(false);
     } catch (err) { setError('Operation failed'); } finally { setIsProcessing(false); }
+  };
+
+  const handleDelete = async (_: React.MouseEvent, id: string) => {
+    const confirmed = window.confirm('Delete this simulation?');
+    if (!confirmed) return;
+
+    const deleted = await deleteSimulation(id);
+    if (!deleted) {
+      setError('Failed to delete simulation');
+      return;
+    }
+
+    if (selectedId === id) {
+      setSelectedId(null);
+      setDetails(null);
+    }
+
+    if (comparisonId === id) {
+      setComparisonId(null);
+    }
   };
 
   const moveTimeline = (direction: 'prev' | 'next') => {
@@ -156,14 +225,23 @@ export default function App() {
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors duration-300 font-sans ${theme === 'dark' ? 'bg-[#09090b] text-zinc-100' : 'bg-zinc-50 text-zinc-900'}`}>
-      
+
+      {isSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 z-[60] bg-transparent"
+        />
+      )}
+
       <Sidebar 
         isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}
         theme={theme} setTheme={setTheme}
         simulations={simulations} selectedId={selectedId} setSelectedId={setSelectedId}
         comparisonId={comparisonId} setComparisonId={setComparisonId}
-        handleDelete={(_, id) => deleteSimulation(id)}
-        openCreateModal={() => { setModalMode('create'); setIsModalOpen(true); }}
+        handleDelete={handleDelete}
+        openCreateModal={openCreateModal}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
@@ -173,7 +251,7 @@ export default function App() {
           isCPDropdownOpen={isCPDropdownOpen} setIsCPDropdownOpen={setIsCPDropdownOpen}
           selectedChargepoints={selectedChargepoints} setSelectedChargepoints={setSelectedChargepoints}
           numCP={details?.numChargepoints || 0} moveTimeline={moveTimeline}
-          currentTimeDisplay={currentTimeDisplay} openUpdateModal={() => { setModalMode('update'); setIsModalOpen(true); }}
+          currentTimeDisplay={currentTimeDisplay} openUpdateModal={openUpdateModal} canUpdate={Boolean(selectedId && details)}
           comparisonId={comparisonId} setComparisonId={setComparisonId} dropdownRef={dropdownRef}
         />
 
@@ -210,7 +288,7 @@ export default function App() {
       </main>
 
       <SimulationModal 
-        isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
+        isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetModalState(); }}
         onSubmit={handleSubmit} mode={modalMode} numCP={numCP} setNumCP={setNumCP}
         multiplier={multiplier} setMultiplier={setMultiplier}
         isProcessing={isProcessing} error={error} theme={theme}

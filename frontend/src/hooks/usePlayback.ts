@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function usePlayback() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -15,10 +15,10 @@ export function usePlayback() {
     return () => clearInterval(interval);
   }, [isPlaying, playSpeed]);
 
-  const resetPlayback = () => {
+  const resetPlayback = useCallback(() => {
     setPlaybackTick(0);
     setIsPlaying(false);
-  };
+  }, []);
 
   return { 
     isPlaying, 
