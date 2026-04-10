@@ -19,9 +19,9 @@ You can run this project in two ways: test the raw mathematical engine directly 
 ## Option A: Standalone CLI Simulation
 If you just want to test the core logic without spinning up the database or UI, you can run the simulation script directly from your terminal.
 
-Navigate to the backend/simulation folder and run the script:
+Navigate to the simulation folder and run the script:
 ```bash
-cd backend
+cd simulation
 npx ts-node src/index.ts
 ```
 
@@ -42,7 +42,7 @@ To experience the complete application with the UI visualization and database pe
 ### Prerequisites
 - Node.js (v18+)
 - A running PostgreSQL instance (Local or via Docker)
-  Example Docker command: `docker run --name ev-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres`
+  - Example Docker command: `docker run --name ev-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres`
 
 ### 1. Environment Configuration
 Navigate to the `backend` folder, duplicate the example env file, and add your Postgres URL:
@@ -87,7 +87,7 @@ A robust REST API to persist and manage simulation runs.
 A minimal, custom-styled dashboard to interact with the backend.
 - **Interactive Chart:** Visualizes the energy demand. Includes timeframe filtering (1 Day, 1 Week, 1 Month, 1 Year).
 - **Live Playback:** An interactive feature that allows you to "playback" a specific day, visualizing exactly which charge points are active and drawing power in real-time.
-- **Compare:** xxx ghost graph oder so
+- **Compare:** Benchmark different simulation runs using a ghost graph overlay to directly compare the impact of the parameter changes.
 - **KPI Dashboards:** Displays aggregated metrics like Total Energy and Max Power.
 
 ---
