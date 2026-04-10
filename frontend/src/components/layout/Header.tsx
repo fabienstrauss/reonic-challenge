@@ -16,6 +16,7 @@ interface HeaderProps {
   moveTimeline: (dir: 'prev' | 'next') => void;
   currentTimeDisplay: string;
   openUpdateModal: () => void;
+  canUpdate: boolean;
   comparisonId: string | null;
   setComparisonId: (id: string | null) => void;
   dropdownRef: RefObject<HTMLDivElement | null>;
@@ -24,7 +25,7 @@ interface HeaderProps {
 export function Header({
   isSidebarOpen, setIsSidebarOpen, theme, period, setPeriod, setOffset,
   isCPDropdownOpen, setIsCPDropdownOpen, selectedChargepoints, setSelectedChargepoints,
-  numCP, moveTimeline, currentTimeDisplay, openUpdateModal, comparisonId, setComparisonId,
+  numCP, moveTimeline, currentTimeDisplay, openUpdateModal, canUpdate, comparisonId, setComparisonId,
   dropdownRef
 }: HeaderProps) {
   const isDark = theme === 'dark';
@@ -109,7 +110,11 @@ export function Header({
               onChange={(e) => { const day = parseInt(e.target.value); if (day >= 1 && day <= 365) { setOffset((day - 1) * 96); setPeriod('1d'); } }} 
             />
           </div>
-         <button onClick={openUpdateModal} className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-zinc-400 hover:bg-zinc-800 hover:text-white' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900'}`}><Settings2 size={18}/></button>
+         <button
+            onClick={openUpdateModal}
+            disabled={!canUpdate}
+            className={`p-1.5 rounded-lg transition-all disabled:cursor-not-allowed disabled:opacity-40 ${isDark ? 'text-zinc-400 hover:bg-zinc-800 hover:text-white' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900'}`}
+         ><Settings2 size={18}/></button>
       </div>
     </header>
   );

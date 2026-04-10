@@ -4,7 +4,7 @@ import { api } from '../api/api';
 
 export function useSimulations() {
   const [simulations, setSimulations] = useState<SimulationMetadata[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchSimulations = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
