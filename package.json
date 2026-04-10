@@ -12,6 +12,8 @@
   },
   "private": true,
   "devDependencies": {
-    "@types/node": "^25.5.2"
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/node": "^25.5.2",
+    "tailwindcss": "^4.2.2"
   }
 }
